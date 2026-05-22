@@ -153,16 +153,16 @@ MODULE_DETECTION_PROMPT = """你是建筑组件识别专家。请从建筑立面
 重要原则：
 1. 语义识别由你完成，代码只负责裁剪、校验、聚合和选择代表图。
 2. 每个独立组件实例都必须单独输出，即使外观完全相同也不能省略。
-3. reusable_group 用于表达“哪些实例属于同一种可复用资产”，同类实例必须使用完全相同的 reusable_group。
+3. reusable_group 用于表达"哪些实例属于同一种可复用资产"，同类实例必须使用完全相同的 reusable_group。
 4. 不要依赖位置词来分组；left/right/top/bottom 只能出现在 name，不能出现在 reusable_group。
 ═══════════════════════════════════════════
 
 ═══════════════════════════════════════════
 【组件拆分规则】
 
-【1】墙面 facade
-- 不要把整层墙面框成一个巨大 facade。
-- facade 应按“窗间墙/门间墙/自然材质块”拆成可复用面板。
+【1】墙面 wall
+- 不要把整层墙面框成一个巨大 wall。
+- wall 应按"窗间墙/门间墙/自然材质块"拆成可复用面板。
 - 面板边界由窗户、门、柱子、木梁、材质分割线决定。
 - 如果同一视觉外观的墙面面板出现多次，每个实例都要单独输出，但 reusable_group 保持相同。
 - 墙面面板要覆盖真实墙体空白区域，不要只包住窗户周围装饰。
@@ -179,29 +179,38 @@ MODULE_DETECTION_PROMPT = """你是建筑组件识别专家。请从建筑立面
 - 窗框、窗台、百叶窗如果视觉上是同一个窗户资产的一部分，可以和窗户合在一起。
 - 如果门板、门框、门顶装饰明显可独立复用，可以拆开；否则作为 door 的完整资产。
 
-【4】附属结构 balcony / chimney / steps / canopy / parapet
+【4】附属结构 balcony / chimney / staircase / awning / parapet / porch
 - 阳台栏杆与窗户分开。
-- 烟囱、台阶、雨棚、女儿墙分别单独识别。
+- 烟囱、楼梯、遮阳篷、女儿墙、门廊分别单独识别。
 - 如果多个实例外观一致，使用相同 reusable_group。
 
-【5】装饰 decoration
-- 小型装饰不要全部粗略写成 decoration。
-- type 统一用 decoration，subtype 必须细分：spire / railing / lamp / plant / molding / sign / beam / other。
+【5】装饰 ornament
+- 小型装饰不要全部粗略写成 ornament。
+- type 统一用 ornament，subtype 必须细分：spire / railing / lamp / plant / molding / sign / beam / other。
 - 例如尖顶、壁灯、植物、木梁、装饰线脚必须分到不同 reusable_group。
 ═══════════════════════════════════════════
 
 ═══════════════════════════════════════════
 【type 与 subtype 规范】
 
-type 必须使用以下主类型之一：
-facade, roof, roof_slope, window, door, shopfront, balcony, chimney, steps, canopy, parapet, dormer, base, decoration
+type 必须使用以下主类型之一（按 category 分组）：
+
+**建筑结构**: wall, roof, roof_slope, window, door, shopfront, balcony, chimney, staircase, awning, parapet, dormer, base, porch, ornament
+
+**自然元素**（场景中出现时识别）: tree, flower, grass, stone, crop
+
+**场景道具**（场景中出现时识别）: furniture, vehicle, tool, building_material
 
 subtype 用英文小写下划线，描述视觉细分类，例如：
 - window: arch_blue_shutter, round_stained_glass, rectangular_wood_frame, shop_display
 - door: arched_pink_wood, double_wood, glass_shop_door
-- facade: stucco_beige_panel, wood_beam_panel, brick_panel, stone_base_panel
+- wall: stucco_beige_panel, wood_beam_panel, brick_panel, stone_base_panel
 - roof_slope: steep_green_tile, medium_green_tile, dormer_green_tile, thatch_side
-- decoration: spire, lamp_black_metal, plant_ivy, railing_black_metal, molding_stone, beam_wood
+- ornament: spire, lamp_black_metal, plant_ivy, railing_black_metal, molding_stone, beam_wood
+- tree: conifer_tall, broadleaf_shrub, round_deciduous
+- flower: blue_small, red_small, flower_box
+- furniture: bench_wood, small_table, metal_chair
+- vehicle: yellow_bicycle, wheelbarrow, cart
 ═══════════════════════════════════════════
 
 ═══════════════════════════════════════════
@@ -220,9 +229,9 @@ subtype 用英文小写下划线，描述视觉细分类，例如：
 正确例子：
 - window_arch_blue_shutter
 - roof_slope_steep_green_tile
-- facade_stucco_beige_panel
-- decoration_lamp_black_metal
-- decoration_plant_ivy
+- wall_stucco_beige_panel
+- ornament_lamp_black_metal
+- ornament_plant_ivy
 - shopfront_striped_awning
 
 错误例子：
@@ -272,6 +281,7 @@ color：简短列出主要颜色，例如 blue shutter, brown frame, beige wall�
   "components": [
     {
       "id": "comp_001",
+      "category": "建筑结构",
       "type": "window",
       "subtype": "arch_blue_shutter",
       "name": "window_arch_blue_shutter_001",
@@ -285,10 +295,11 @@ color：简短列出主要颜色，例如 blue shutter, brown frame, beige wall�
     },
     {
       "id": "comp_002",
-      "type": "facade",
+      "category": "建筑结构",
+      "type": "wall",
       "subtype": "stucco_beige_panel",
-      "name": "facade_stucco_beige_panel_001",
-      "reusable_group": "facade_stucco_beige_panel",
+      "name": "wall_stucco_beige_panel_001",
+      "reusable_group": "wall_stucco_beige_panel",
       "chinese_description": "米色灰泥窗间墙面板，竖向长方形比例，带轻微砖缝纹理和木梁边框",
       "generation_prompt": "单块米色灰泥墙面板，带木梁边框和细微砖缝纹理，45度等轴游戏建筑资产",
       "material": "stucco, wood",
@@ -304,8 +315,8 @@ color：简短列出主要颜色，例如 blue shutter, brown frame, beige wall�
 □ 每个独立组件实例都已输出，外观相同也没有省略。
 □ type 使用主类型，subtype 描述细分类。
 □ reusable_group 不包含位置词，同类资产命名完全一致。
-□ decoration 已通过 subtype/reusable_group 细分，不是一组混杂装饰。
-□ facade 不是整层大框，而是自然墙面面板。
+□ ornament 已通过 subtype/reusable_group 细分，不是一组混杂装饰。
+□ wall 不是整层大框，而是自然墙面面板。
 □ 相邻窗户、门、阳台没有被错误合并。
 □ bbox 是整数像素值，且紧贴组件边缘。
 □ 每个组件都有 chinese_description 和 generation_prompt。"""
@@ -427,7 +438,7 @@ def validate_components(components: List[Dict], image_width: int, image_height: 
     
     # 1. 检查是否有基本组件
     types = [c.get("type") for c in components]
-    if "roof" not in types and "facade" not in types:
+    if "roof" not in types and "wall" not in types:
         warnings.append("未识别到屋顶或墙体，可能是输入图片有问题")
     
     # 2. 检查门的位置
@@ -452,9 +463,9 @@ def validate_components(components: List[Dict], image_width: int, image_height: 
         warnings.append(f"识别到 {window_count} 个窗户，数量偏多，请检查是否有误")
     
     # 5. 检查墙面数量
-    facade_count = types.count("facade")
-    if facade_count < 2:
-        warnings.append(f"只识别到 {facade_count} 个墙面，可能需要更多楼层墙面")
+    wall_count = types.count("wall")
+    if wall_count < 2:
+        warnings.append(f"只识别到 {wall_count} 个墙面，可能需要更多楼层墙面")
     
     # 6. 检查 reusable_group 一致性
     # 如果 type + subtype + chinese_description 相同，reusable_group 也应该相同
