@@ -28,6 +28,6 @@ input/
 .DS_Store
 Thumbs.db
 desktop.ini
-
+.workbuddy
 # ═══ 日志 ═══
 *.log
